@@ -1,0 +1,249 @@
+﻿@page "/teachers/edit/{Id:int}"
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.EntityFrameworkCore
+@using Lab_5.Data
+@using Lab_5.Models
+@inject UniversityDbContext Context
+@inject NavigationManager Navigation
+
+<PageTitle>Редагування викладача</PageTitle>
+
+<h2 class="my-4 fw-bold text-secondary">Редагування відомостей про викладача</h2>
+
+@if (teacherModel == null)
+{
+    <p><em>Завантаження...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-8 bg-white p-4 rounded shadow-sm mb-5">
+            <EditForm Model="teacherModel" OnValidSubmit="HandleValidSubmit" FormName="editForm">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger mb-3" />
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Прізвище</label>
+                        <InputText @bind-Value="teacherModel.LastName" class="form-control" />
+                        <ValidationMessage For="@(() => teacherModel.LastName)" class="text-danger" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Ім'я</label>
+                        <InputText @bind-Value="teacherModel.FirstName" class="form-control" />
+                        <ValidationMessage For="@(() => teacherModel.FirstName)" class="text-danger" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">По батькові</label>
+                        <InputText @bind-Value="teacherModel.MiddleName" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Телефон</label>
+                        <InputText @bind-Value="teacherModel.Phone" class="form-control" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Місце роботи</label>
+                        <InputText @bind-Value="teacherModel.Workplace" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Посада</label>
+                    <InputSelect @bind-Value="teacherModel.PositionID" class="form-select">
+                        <option value="0">-- Оберіть посаду --</option>
+                        @if (positions != null)
+                        {
+                            @foreach (var pos in positions)
+                            {
+                                <option value="@pos.PositionID">@pos.PositionName</option>
+                            }
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => teacherModel.PositionID)" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Домашня адреса</label>
+                    <InputText @bind-Value="teacherModel.HomeAddress" class="form-control" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Характеристика</label>
+                    <InputTextArea @bind-Value="teacherModel.Characteristic" class="form-control" rows="3" />
+                </div>
+
+                <hr class="my-4" />
+                <h5 class="fw-bold text-primary mb-3">Призначення дисциплін</h5>
+
+                @if (subjectSelections != null && subjectSelections.Count > 0)
+                {
+                    <div class="table-responsive mb-3">
+                        <table class="table table-bordered align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50px;" class="text-center">Обрати</th>
+                                    <th>Предмет</th>
+                                    <th style="width: 180px;">Прочитані години</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < subjectSelections.Count; i++)
+                                {
+                                    var index = i;
+                                    <tr>
+                                        <td class="text-center">
+                                            <InputCheckbox @bind-Value="subjectSelections[index].IsSelected" class="form-check-input" />
+                                        </td>
+                                        <td>
+                                            @subjectSelections[index].SubjectName
+                                        </td>
+                                        <td>
+                                            <InputNumber @bind-Value="subjectSelections[index].HoursRead" class="form-control" min="0" max="500" />
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary fw-semibold me-2">Зберегти зміни</button>
+                    <a href="/teachers" class="btn btn-secondary">Скасувати</a>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private TeacherEditModel? teacherModel { get; set; }
+
+    [SupplyParameterFromForm]
+    private List<SubjectSelectionItem>? subjectSelections { get; set; }
+
+    private List<Position>? positions;
+
+    public class TeacherEditModel
+    {
+        [Required(ErrorMessage = "Прізвище є обов'язковим")]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Ім'я є обов'язковим")]
+        public string FirstName { get; set; } = string.Empty;
+
+        public string? MiddleName { get; set; }
+        public string? Phone { get; set; }
+        public string? Workplace { get; set; }
+
+        [Required(ErrorMessage = "Оберіть посаду")]
+        [Range(1, int.MaxValue, ErrorMessage = "Оберіть посаду")]
+        public int PositionID { get; set; }
+
+        public string? HomeAddress { get; set; }
+        public string? Characteristic { get; set; }
+    }
+
+    public class SubjectSelectionItem
+    {
+        public int SubjectID { get; set; }
+        public string SubjectName { get; set; } = string.Empty;
+        public bool IsSelected { get; set; }
+        public int HoursRead { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        positions = await Context.Positions.ToListAsync();
+
+        if (teacherModel == null)
+        {
+            var teacher = await Context.Teachers
+                .Include(t => t.TeacherSubjects)
+                .FirstOrDefaultAsync(t => t.TeacherID == Id);
+
+            if (teacher != null)
+            {
+                teacherModel = new TeacherEditModel
+                {
+                    LastName = teacher.LastName,
+                    FirstName = teacher.FirstName,
+                    MiddleName = teacher.MiddleName,
+                    Phone = teacher.Phone,
+                    Workplace = teacher.Workplace,
+                    PositionID = teacher.PositionID,
+                    HomeAddress = teacher.HomeAddress,
+                    Characteristic = teacher.Characteristic
+                };
+
+                var allSubjects = await Context.Subjects.OrderBy(s => s.SubjectID).ToListAsync();
+                var existingDict = teacher.TeacherSubjects?
+                    .ToDictionary(ts => ts.SubjectID, ts => ts.HoursRead) 
+                    ?? new Dictionary<int, int>();
+
+                subjectSelections = allSubjects.Select(s => new SubjectSelectionItem
+                {
+                    SubjectID = s.SubjectID,
+                    SubjectName = s.SubjectName,
+                    IsSelected = existingDict.ContainsKey(s.SubjectID),
+                    HoursRead = existingDict.ContainsKey(s.SubjectID) ? existingDict[s.SubjectID] : 0
+                }).ToList();
+            }
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var teacherToUpdate = await Context.Teachers
+            .Include(t => t.TeacherSubjects)
+            .FirstOrDefaultAsync(t => t.TeacherID == Id);
+
+        if (teacherToUpdate != null && teacherModel != null)
+        {
+            // Оновлюємо персональні дані
+            teacherToUpdate.LastName = teacherModel.LastName;
+            teacherToUpdate.FirstName = teacherModel.FirstName;
+            teacherToUpdate.MiddleName = teacherModel.MiddleName;
+            teacherToUpdate.Phone = teacherModel.Phone;
+            teacherToUpdate.Workplace = teacherModel.Workplace;
+            teacherToUpdate.PositionID = teacherModel.PositionID;
+            teacherToUpdate.HomeAddress = teacherModel.HomeAddress;
+            teacherToUpdate.Characteristic = teacherModel.Characteristic;
+
+            if (teacherToUpdate.TeacherSubjects != null)
+            {
+                Context.TeacherSubjects.RemoveRange(teacherToUpdate.TeacherSubjects);
+            }
+
+            var allSubjects = await Context.Subjects.OrderBy(s => s.SubjectID).ToListAsync();
+
+            if (subjectSelections != null)
+            {
+                for (int i = 0; i < subjectSelections.Count; i++)
+                {
+                    var item = subjectSelections[i];
+                    if (item.IsSelected && i < allSubjects.Count)
+                    {
+                        Context.TeacherSubjects.Add(new TeacherSubject
+                        {
+                            TeacherID = Id,
+                            SubjectID = allSubjects[i].SubjectID, 
+                            HoursRead = item.HoursRead < 0 ? 0 : item.HoursRead
+                        });
+                    }
+                }
+            }
+
+            await Context.SaveChangesAsync();
+        }
+
+        Navigation.NavigateTo("/teachers");
+    }
+}

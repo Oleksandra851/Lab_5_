@@ -1,0 +1,75 @@
+﻿@page "/teachers/delete/{Id:int}"
+@using Microsoft.EntityFrameworkCore
+@using Lab_5.Data
+@using Lab_5.Models
+@inject UniversityDbContext Context
+@inject NavigationManager Navigation
+
+<PageTitle>Видалення викладача</PageTitle>
+
+<h2 class="my-4 fw-bold text-danger">Видалення викладача</h2>
+<h4 class="mb-4">Ви дійсно бажаєте видалити цей запис?</h4>
+
+@if (teacher == null)
+{
+    <p><em>Завантаження...</em></p>
+}
+else
+{
+    <div class="bg-white p-4 rounded shadow-sm">
+        <dl class="row fs-5">
+            <dt class="col-sm-3">ПІБ Викладача</dt>
+            <dd class="col-sm-9 fw-semibold">@($"{teacher.LastName} {teacher.FirstName} {teacher.MiddleName}")</dd>
+            <dt class="col-sm-3">Посада</dt>
+            <dd class="col-sm-9">@teacher.Position?.PositionName</dd>
+            <dt class="col-sm-3">Телефон</dt>
+            <dd class="col-sm-9">@teacher.Phone</dd>
+        </dl>
+        
+        <EditForm Model="teacher" OnValidSubmit="ConfirmDelete" FormName="deleteForm">
+            <div class="mt-4">
+                <button type="submit" class="btn btn-danger fw-semibold me-2">Підтвердити видалення</button>
+                <a href="/teachers" class="btn btn-secondary">Скасувати</a>
+            </div>
+        </EditForm>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private Teacher? teacher { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (teacher == null)
+        {
+            teacher = await Context.Teachers
+                .Include(t => t.Position)
+                .FirstOrDefaultAsync(m => m.TeacherID == Id);
+        }
+    }
+
+    private async Task ConfirmDelete()
+    {
+        var teacherToDelete = await Context.Teachers
+            .Include(t => t.TeacherSubjects)
+            .FirstOrDefaultAsync(t => t.TeacherID == Id);
+
+        if (teacherToDelete != null)
+        {
+            
+            if (teacherToDelete.TeacherSubjects != null && teacherToDelete.TeacherSubjects.Any())
+            {
+                Context.TeacherSubjects.RemoveRange(teacherToDelete.TeacherSubjects);
+            }
+
+            Context.Teachers.Remove(teacherToDelete);
+            await Context.SaveChangesAsync();
+        }
+
+        Navigation.NavigateTo("/teachers", forceLoad: true);
+    }
+}

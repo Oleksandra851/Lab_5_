@@ -1,0 +1,81 @@
+﻿@page "/teachers"
+@using Microsoft.EntityFrameworkCore
+@using Lab_5.Data
+@using Lab_5.Models
+@inject UniversityDbContext Context
+
+<PageTitle>Реєстр викладачів</PageTitle>
+
+<h2 class="my-4 fw-bold text-secondary">Реєстр викладачів університету (Blazor)</h2>
+
+<p class="mb-3">
+    <a href="/teachers/create" class="btn btn-primary shadow-sm fw-semibold">+ Додати нового викладача</a>
+</p>
+
+@if (teachers == null)
+{
+    <p><em>Завантаження даних...</em></p>
+}
+else
+{
+    <div class="table-responsive shadow-sm rounded-3 mb-5">
+        <table class="table table-hover align-middle mb-0 bg-white">
+            <thead>
+                <tr>
+                    <th style="background-color: #dbeafe; color: #1e3a8a; padding: 14px;">ПІБ Викладача</th>
+                    <th style="background-color: #dbeafe; color: #1e3a8a; padding: 14px;">Телефон</th>
+                    <th style="background-color: #dbeafe; color: #1e3a8a; padding: 14px;">Місце роботи</th>
+                    <th style="background-color: #dbeafe; color: #1e3a8a; padding: 14px;">Посада</th>
+                    <th style="background-color: #dbeafe; color: #1e3a8a; padding: 14px;">Предмети (Години)</th>
+                    <th style="background-color: #dbeafe; color: #1e3a8a; padding: 14px;" class="text-center">Дії</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in teachers)
+                {
+                    <tr>
+                        <td class="fw-semibold">@($"{item.LastName} {item.FirstName} {item.MiddleName}")</td>
+                        <td>@item.Phone</td>
+                        <td>@item.Workplace</td>
+                        <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fs-6">@item.Position?.PositionName</span></td>
+                        <td>
+                            @if (item.TeacherSubjects != null && item.TeacherSubjects.Any())
+                            {
+                                <ul class="list-unstyled mb-0">
+                                    @foreach (var ts in item.TeacherSubjects)
+                                    {
+                                        <li>• @ts.Subject?.SubjectName <span class="text-muted">(@ts.HoursRead год)</span></li>
+                                    }
+                                </ul>
+                            }
+                            else
+                            {
+                                <span class="text-muted fst-italic">Не призначено</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="/teachers/edit/@item.TeacherID" class="btn btn-warning fw-semibold">Редагувати</a>
+                                <a href="/teachers/details/@item.TeacherID" class="btn btn-info text-white fw-semibold">Деталі</a>
+                                <a href="/teachers/delete/@item.TeacherID" class="btn btn-danger fw-semibold">Видалити</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<Teacher>? teachers;
+
+    protected override async Task OnInitializedAsync()
+    {
+        teachers = await Context.Teachers
+            .Include(t => t.Position)
+            .Include(t => t.TeacherSubjects)
+                .ThenInclude(ts => ts.Subject)
+            .ToListAsync();
+    }
+}
